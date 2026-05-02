@@ -29,7 +29,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-          XAI_BASE_URL: https://openrouter.ai/api/v1/chat/completions
+          XAI_BASE_URL: https://api.x.ai/v1/chat/completions
           XAI_MODEL: x-ai/grok-4-fast
           PRODUCTHUNT_TOKEN: ${{ secrets.PRODUCTHUNT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
