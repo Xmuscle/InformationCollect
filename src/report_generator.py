@@ -11,14 +11,14 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-from src.config import GEMINI_RATE_LIMIT_DELAY
+from src.config import LLM_RATE_LIMIT_DELAY
 
-# --- Gemini Translator ---
+# --- DeepSeek Translator ---
 try:
     from src.utils.gemini_translator import translate_to_chinese, summarize_blog_article, generate_brief
-    GEMINI_AVAILABLE = True
+    LLM_AVAILABLE = True
 except ImportError:
-    GEMINI_AVAILABLE = False
+    LLM_AVAILABLE = False
 
 # --- Jina Reader (Full Content Fetcher) ---
 try:
@@ -28,8 +28,8 @@ except ImportError:
     JINA_AVAILABLE = False
     logger.info("Jina Reader not available, using RSS description only.")
 
-if not GEMINI_AVAILABLE:
-    logger.info("Gemini translator not available, using English summaries.")
+if not LLM_AVAILABLE:
+    logger.info("DeepSeek translator not available, using English summaries.")
     def translate_to_chinese(text, max_chars=100):
         return text[:max_chars] + "..." if len(text) > max_chars else text
 
@@ -104,8 +104,8 @@ def generate_report(intel: dict, date_str: str) -> str:
             brief_cn = generate_brief(summary, category="research") if summary else ""
             
             # 添加延迟以避免 API 限速
-            if GEMINI_AVAILABLE and summary:
-                time.sleep(GEMINI_RATE_LIMIT_DELAY)
+            if LLM_AVAILABLE and summary:
+                time.sleep(LLM_RATE_LIMIT_DELAY)
             
             # 2. Detail: 完整翻译（允许完整输出）
             detail_cn = translate_to_chinese(summary, max_chars=2000) if summary else ""
@@ -225,9 +225,9 @@ def generate_report(intel: dict, date_str: str) -> str:
 
             brief_cn = ""
             detail_cn = ""
-            if source_text and GEMINI_AVAILABLE:
+            if source_text and LLM_AVAILABLE:
                 brief_cn = summarize_blog_article(source_text, mode="brief")
-                time.sleep(GEMINI_RATE_LIMIT_DELAY)
+                time.sleep(LLM_RATE_LIMIT_DELAY)
                 detail_cn = summarize_blog_article(source_text, mode="detail")
 
             lines.append(f"### {i}. [{title}]({url})")

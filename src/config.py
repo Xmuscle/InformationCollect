@@ -38,7 +38,7 @@ class IntelConfig:
     """
 
     # === Core API Keys (SECRETS — no defaults) ===
-    gemini_api_key: Optional[str] = field(default=None)
+    deepseek_api_key: Optional[str] = field(default=None)
     xai_api_key: Optional[str] = field(default=None)
     github_token: Optional[str] = field(default=None)
     producthunt_token: Optional[str] = field(default=None)
@@ -48,11 +48,11 @@ class IntelConfig:
     xai_base_url: str = "https://openrouter.ai/api/v1/chat/completions"
     xai_model: str = "x-ai/grok-4-fast"
 
-    # === Gemini Configuration ===
-    gemini_api_url: str = "https://generativelanguage.googleapis.com/v1beta/models"
-    gemini_model: str = "gemini-2.0-flash"
-    gemini_timeout: int = 60
-    gemini_max_retries: int = 3
+    # === DeepSeek Configuration ===
+    deepseek_api_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-chat"
+    deepseek_timeout: int = 60
+    deepseek_max_retries: int = 3
 
     # === Jina Reader Configuration ===
     jina_reader_url: str = "https://r.jina.ai/"
@@ -65,7 +65,7 @@ class IntelConfig:
     limit_per_source: int = 10
     max_hn_blogs: int = 5
     content_truncate_limit: int = 3000
-    gemini_rate_limit_delay: float = 1.5
+    llm_rate_limit_delay: float = 1.5
 
     # === Feature Flags ===
     enable_grok_sentiment: bool = True
@@ -75,7 +75,7 @@ class IntelConfig:
     def from_env(cls) -> "IntelConfig":
         """Build config from environment variables."""
         return cls(
-            gemini_api_key=os.getenv("GEMINI_API_KEY"),
+            deepseek_api_key=os.getenv("DEEPSEEK_API_KEY"),
             xai_api_key=os.getenv("XAI_API_KEY"),
             github_token=os.getenv("GITHUB_TOKEN"),
             producthunt_token=os.getenv("PRODUCTHUNT_TOKEN"),
@@ -84,13 +84,13 @@ class IntelConfig:
                 "https://openrouter.ai/api/v1/chat/completions",
             ),
             xai_model=os.getenv("XAI_MODEL", "x-ai/grok-4-fast"),
-            gemini_api_url=os.getenv(
-                "GEMINI_API_URL",
-                "https://generativelanguage.googleapis.com/v1beta/models",
+            deepseek_api_url=os.getenv(
+                "DEEPSEEK_API_URL",
+                "https://api.deepseek.com",
             ),
-            gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
-            gemini_timeout=int(os.getenv("GEMINI_TIMEOUT", "60")),
-            gemini_max_retries=int(os.getenv("GEMINI_MAX_RETRIES", "3")),
+            deepseek_model=os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
+            deepseek_timeout=int(os.getenv("DEEPSEEK_TIMEOUT", "60")),
+            deepseek_max_retries=int(os.getenv("DEEPSEEK_MAX_RETRIES", "3")),
             jina_reader_url=os.getenv("JINA_READER_URL", "https://r.jina.ai/"),
             jina_timeout=int(os.getenv("JINA_TIMEOUT", "30")),
             jina_max_chars=int(os.getenv("JINA_MAX_CHARS", "15000")),
@@ -110,8 +110,8 @@ class IntelConfig:
             warnings.append("XAI_API_KEY not set — Grok sensor will be disabled")
         if not self.github_token:
             warnings.append("GITHUB_TOKEN not set — GitHub Trending will be disabled")
-        if not self.gemini_api_key:
-            warnings.append("GEMINI_API_KEY not set — report generation will fail")
+        if not self.deepseek_api_key:
+            warnings.append("DEEPSEEK_API_KEY not set — report generation will fail")
         return warnings
 
 
@@ -119,13 +119,13 @@ class IntelConfig:
 cfg = IntelConfig.from_env()
 
 # Backward-compatible module-level exports
-# (used by gemini_translator.py, jina_reader.py, report_generator.py)
-GEMINI_RATE_LIMIT_DELAY = cfg.gemini_rate_limit_delay
-GEMINI_API_KEY = cfg.gemini_api_key
-GEMINI_API_URL = cfg.gemini_api_url
-GEMINI_MODEL = cfg.gemini_model
-GEMINI_TIMEOUT = cfg.gemini_timeout
-GEMINI_MAX_RETRIES = cfg.gemini_max_retries
+# (used by gemini_translator.py (DeepSeek), jina_reader.py, report_generator.py)
+LLM_RATE_LIMIT_DELAY = cfg.llm_rate_limit_delay
+DEEPSEEK_API_KEY = cfg.deepseek_api_key
+DEEPSEEK_API_URL = cfg.deepseek_api_url
+DEEPSEEK_MODEL = cfg.deepseek_model
+DEEPSEEK_TIMEOUT = cfg.deepseek_timeout
+DEEPSEEK_MAX_RETRIES = cfg.deepseek_max_retries
 JINA_READER_URL = cfg.jina_reader_url
 JINA_TIMEOUT = cfg.jina_timeout
 JINA_MAX_CHARS = cfg.jina_max_chars
