@@ -23,6 +23,10 @@ __pycache__/
 .Python
 *.so
 
+# uv / venv
+.venv/
+uv.lock
+
 # Antigravity 本地状态
 .antigravity/
 
