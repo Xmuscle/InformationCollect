@@ -41,7 +41,8 @@ def fetch_linuxdo(limit: int = 10) -> list[dict]:
     try:
         data = _fetch_json_via_curl(LINUXDO_API_URL)
     except Exception as e:
-        logger.warning(f"linux.do 抓取失败: {e}")
+        # linux.do 屏蔽数据中心 IP（GitHub Actions 等），此为预期行为
+        logger.info(f"linux.do 跳过（站点可能屏蔽了当前 IP）: {e}")
         return []
 
     topics = data.get("topic_list", {}).get("topics", [])
