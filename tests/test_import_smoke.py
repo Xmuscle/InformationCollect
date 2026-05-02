@@ -20,6 +20,7 @@ MODULES = [
     "src.sensors.mit_tech_review",
     "src.sensors.chrome_radar",
     "src.sensors.v2ex_radar",
+    "src.sensors.linuxdo",
     "src.external.fetch_news",
     "src.utils.verifier",
 ]

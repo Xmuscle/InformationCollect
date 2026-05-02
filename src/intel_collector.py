@@ -93,6 +93,13 @@ except ImportError:
     MIT_TR_AVAILABLE = False
     print("[WARN] MIT Technology Review sensor not available, skipping.")
 
+try:
+    from src.sensors.linuxdo import fetch_linuxdo
+    LINUXDO_AVAILABLE = True
+except ImportError:
+    LINUXDO_AVAILABLE = False
+    print("[WARN] linux.do sensor not available, skipping.")
+
 # --- Anti-Hallucination: Link Verifier ---
 try:
     from src.utils.verifier import verify_link
@@ -254,6 +261,12 @@ def _fetch_mit_tr(_limit):
         } for a in articles
     ]
 
+def _fetch_linuxdo(limit):
+    items = fetch_linuxdo(limit=limit)
+    return "linux.do", "community", [
+        {**item, "category": "linux.do"} for item in items
+    ]
+
 def _fetch_product_hunt(limit):
     products = fetch_trending_products(limit)
     results = []
@@ -313,6 +326,8 @@ def fetch_all_sources(limit_per_source: int = 10) -> dict:
         batch1_tasks.append(("HN Blogs", _fetch_hn_blogs, True))
     if MIT_TR_AVAILABLE:
         batch1_tasks.append(("MIT TR", _fetch_mit_tr, True))
+    if LINUXDO_AVAILABLE:
+        batch1_tasks.append(("linux.do", _fetch_linuxdo, True))
     if PH_AVAILABLE:
         batch1_tasks.append(("Product Hunt", _fetch_product_hunt, True))
     

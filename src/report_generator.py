@@ -15,7 +15,7 @@ from src.config import LLM_RATE_LIMIT_DELAY
 
 # --- DeepSeek Translator ---
 try:
-    from src.utils.gemini_translator import translate_to_chinese, summarize_blog_article, generate_brief
+    from src.utils.gemini_translator import translate_to_chinese, summarize_blog_article, generate_brief, generate_news_brief
     LLM_AVAILABLE = True
 except ImportError:
     LLM_AVAILABLE = False
@@ -37,6 +37,9 @@ if not LLM_AVAILABLE:
         return ""
 
     def generate_brief(content, category="general"):
+        return ""
+
+    def generate_news_brief(title, content="", category="tech"):
         return ""
 
 
@@ -63,8 +66,17 @@ def generate_report(intel: dict, date_str: str) -> str:
             heat = item.get("heat", "")
             time_str = item.get("time", "")
             cat = item.get("category", "")
+            detail = item.get("detail", "")
+
+            # 生成中文摘要
+            brief_cn = ""
+            if LLM_AVAILABLE:
+                brief_cn = generate_news_brief(title, detail, category="tech")
+                time.sleep(LLM_RATE_LIMIT_DELAY)
 
             lines.append(f"### {i}. [{title}]({url})")
+            if brief_cn:
+                lines.append(f"> ⚡ {brief_cn}")
             lines.append(f"📍 {cat} | 🔥 {heat} | 🕒 {time_str}")
             lines.append("")
     else:
