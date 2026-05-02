@@ -14,13 +14,14 @@ jobs:
       - name: Checkout engine
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+        run: uv python install 3.13
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv sync
 
       - name: Generate Morning Report
         env:
@@ -30,7 +31,7 @@ jobs:
           XAI_MODEL: x-ai/grok-4-fast
           PRODUCTHUNT_TOKEN: ${{ secrets.PRODUCTHUNT_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python cli.py
+        run: uv run python cli.py
 
       - name: Deliver report to PWA
         env:
