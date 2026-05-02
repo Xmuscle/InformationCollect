@@ -1,6 +1,6 @@
 # 🌐 全球情报日报 (Global Intel Briefing)
 **日期:** 2026-05-02
-**生成时间:** 08:46
+**生成时间:** 08:57
 **数据源:** HN, GitHub, 36Kr, WallStreetCN, V2EX, PH, ArXiv, X, TechCrunch, MIT TR
 
 ---
@@ -102,7 +102,37 @@
 ## 💎 产品精选 (Product Gems)
 > Product Hunt Today
 
-*暂无数据 (Product Hunt API 可能需要配置)*
+### 1. [Brila](https://www.producthunt.com/posts/brila-2)
+> One-page websites from real Google Maps reviews
+🔥 1291 votes
+
+### 2. [Fathom 3.0](https://www.producthunt.com/posts/fathom-3-0)
+> AI meeting notes: now bot-free, in ChatGPT & Claude + more
+🔥 759 votes
+
+### 3. [ProdShort](https://www.producthunt.com/posts/prodshort)
+> Turn meetings into ready-to-post shorts and posts
+🔥 715 votes
+
+### 4. [Plurai](https://www.producthunt.com/posts/plurai)
+> Vibe-train evals and guardrails tailored to your use case
+🔥 692 votes
+
+### 5. [Velo](https://www.producthunt.com/posts/velo-10)
+> Share anything as video messages
+🔥 666 votes
+
+### 6. [Clera](https://www.producthunt.com/posts/clera)
+> An AI agent matching candidates to the right roles.
+🔥 629 votes
+
+### 7. [Dune](https://www.producthunt.com/posts/dune-5)
+> Context-aware Mac keypad to automate workflows + meetings
+🔥 623 votes
+
+### 8. [NovaVoice](https://www.producthunt.com/posts/novavoice)
+> Smart dictation, AI assistant, + app control via voice
+🔥 605 votes
 
 ## 🐦 社交热议 (Social)
 > X (Twitter) - AI/Tech Discussions
@@ -124,8 +154,8 @@
 ### 4. [异地组网方案怎么选？从 n2n 到 WireGuard，折腾一圈后的真实记录](https://www.v2ex.com/t/1209892)
 💬 28 replies
 
-### 5. [MiMo-V2.5-Pro，一句提问掉了 90000000（千万）token](https://www.v2ex.com/t/1209866)
-💬 24 replies
+### 5. [决定开始定投标普 500 和纳指 100 了！](https://www.v2ex.com/t/1209961)
+💬 26 replies
 
 ## 💡 深度洞察 (Insights)
 > HN Top Blogs + MIT Technology Review — 精选深度分析
