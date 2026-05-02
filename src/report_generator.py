@@ -136,6 +136,39 @@ def generate_report(intel: dict, date_str: str) -> str:
     else:
         lines.append("*暂无数据*\n")
 
+    # --- Agent Research (ArXiv Agent) ---
+    lines.append("## 🤖 AI Agent 前沿 (Agent Research)")
+    lines.append("> ArXiv AI Agent Papers\n")
+
+    if intel.get("agent_research"):
+        for i, item in enumerate(intel["agent_research"][:5], 1):
+            title = item.get("title", "Untitled")
+            url = item.get("url", "#")
+            authors = item.get("authors", "")
+            time_str = item.get("time", "")
+            summary = item.get("summary", "").replace("\n", " ")
+
+            brief_cn = generate_brief(summary, category="research") if summary else ""
+
+            if LLM_AVAILABLE and summary:
+                time.sleep(LLM_RATE_LIMIT_DELAY)
+
+            detail_cn = translate_to_chinese(summary, max_chars=2000) if summary else ""
+
+            lines.append(f"### {i}. [{title}]({url})")
+            if brief_cn:
+                lines.append(f"> ⚡ {brief_cn}")
+
+            lines.append(f"👤 {authors} | 📅 {time_str}")
+
+            if detail_cn:
+                lines.append("")
+                lines.append(f"**详情:** {detail_cn}")
+
+            lines.append("")
+    else:
+        lines.append("*暂无数据*\n")
+
     # --- Product Gems ---
     lines.append("## 💎 产品精选 (Product Gems)")
     lines.append("> Product Hunt Today\n")

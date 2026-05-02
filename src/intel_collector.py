@@ -52,7 +52,7 @@ except ImportError:
     print("[WARN] Product Hunt sensor not available, skipping.")
 
 try:
-    from src.sensors.arxiv_ai import fetch_ai_papers
+    from src.sensors.arxiv_ai import fetch_ai_papers, fetch_agent_papers
     ARXIV_AVAILABLE = True
 except ImportError:
     ARXIV_AVAILABLE = False
@@ -215,6 +215,19 @@ def _fetch_arxiv(limit):
         } for p in papers
     ]
 
+def _fetch_arxiv_agent(limit):
+    papers = fetch_agent_papers(limit=limit)
+    return "ArXiv Agent", "agent_research", [
+        {
+            "source": "ArXiv Agent", "category": "ArXiv Agent",
+            "title": p.title, "url": p.url,
+            "authors": ", ".join(p.authors[:2]),
+            "time": p.published,
+            "categories": ", ".join(p.categories[:2]),
+            "summary": p.summary
+        } for p in papers
+    ]
+
 def _fetch_hf_papers(limit):
     papers = fetch_hf_daily_papers(limit=limit)
     return "HF Papers", "research", [
@@ -302,6 +315,7 @@ def fetch_all_sources(limit_per_source: int = 10) -> dict:
         "product_gems": [],
         "community": [],
         "research": [],
+        "agent_research": [],
         "social": [],
         "insights": []
     }
@@ -320,6 +334,7 @@ def fetch_all_sources(limit_per_source: int = 10) -> dict:
         batch1_tasks.append(("HF Papers", _fetch_hf_papers, True))
     if ARXIV_AVAILABLE:
         batch1_tasks.append(("ArXiv", _fetch_arxiv, True))
+        batch1_tasks.append(("ArXiv Agent", _fetch_arxiv_agent, True))
     if TC_AVAILABLE:
         batch1_tasks.append(("TechCrunch", _fetch_techcrunch, True))
     if HN_BLOGS_AVAILABLE:
@@ -416,6 +431,8 @@ Keep it concise but informative. If no data found, say "暂无X平台讨论数�
     # HF Papers + ArXiv may return the same paper (same arXiv ID)
     if intel["research"]:
         intel["research"] = _dedup_items(intel["research"])
+    if intel["agent_research"]:
+        intel["agent_research"] = _dedup_items(intel["agent_research"])
     
     return intel
 

@@ -97,6 +97,31 @@ def _query_arxiv(query: str, sort_by: str, limit: int) -> List[ArxivPaper]:
     
     return papers
 
+def fetch_agent_papers(limit: int = 10) -> List[ArxivPaper]:
+    """Fetch latest AI Agent papers from arXiv with keyword search."""
+    print(f"  → Fetching latest {limit} AI Agent papers from arXiv...")
+
+    strategies = [
+        ('ti:"agent"+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG)', "submittedDate"),
+        ('ti:"agent"+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.MA)', "submittedDate"),
+        ('ti:"agent"+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.MA)', "lastUpdatedDate"),
+    ]
+
+    for i, (query, sort_by) in enumerate(strategies):
+        papers = _query_arxiv(query, sort_by, limit)
+        if papers:
+            if i > 0:
+                print(f"    ✓ Got {len(papers)} papers using fallback strategy #{i+1}")
+            return papers
+        if i < len(strategies) - 1:
+            import time
+            print(f"    ⚠ Strategy #{i+1} returned 0 papers, retrying with broader query...")
+            time.sleep(3)
+
+    print("    ⚠ All strategies exhausted, no agent papers found")
+    return []
+
+
 def print_papers(papers: List[ArxivPaper]):
     """Print papers in a readable format."""
     print(f"\n{'='*60}")

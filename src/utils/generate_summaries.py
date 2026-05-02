@@ -43,6 +43,7 @@ CATEGORY_LIMITS = {
     "tech_trends": 10,
     "capital_flow": 10,
     "research": 5,
+    "agent_research": 5,
     "product_gems": 8,
     "insights": 5,
 }
@@ -236,6 +237,31 @@ def generate_summaries(intel: dict, date_str: str) -> dict:
 
             if summary:
                 # ArXiv has full abstract — translate and summarize
+                cn_summary = _summarize_content(summary, title)
+                if cn_summary:
+                    summaries[article_id] = cn_summary
+                    generated += 1
+                    print(f"  [{i+1}] ✅ {title[:40]}...")
+                else:
+                    summaries[article_id] = f"📰 快讯：{title}"
+                    failed += 1
+            else:
+                summaries[article_id] = f"📰 快讯：{title}"
+                failed += 1
+
+            time.sleep(0.5)
+
+    # ========== AGENT RESEARCH (ArXiv Agent) ==========
+    agent_items = intel.get("agent_research", [])[:CATEGORY_LIMITS["agent_research"]]
+    if agent_items:
+        print(f"\n[*] Agent Research ({len(agent_items)} items)...")
+        for i, item in enumerate(agent_items):
+            article_id = f"{date_prefix}-agent-{i}"
+            title = item.get("title", "")
+            summary = item.get("summary", "")
+            total += 1
+
+            if summary:
                 cn_summary = _summarize_content(summary, title)
                 if cn_summary:
                     summaries[article_id] = cn_summary
