@@ -9,6 +9,8 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout engine
@@ -33,46 +35,27 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: uv run python cli.py
 
-      - name: Deliver report to PWA
-        env:
-          PWA_DEPLOY_TOKEN: ${{ secrets.PWA_DEPLOY_TOKEN }}
+      - name: Commit report to repo
         run: |
           DATE=$(date -u +%Y-%m-%d)
           REPORT="reports/daily_briefings/Morning_Report_${DATE}.md"
-          SUMMARIES="reports/summaries/${DATE}.json"
 
           if [ ! -f "$REPORT" ]; then
             echo "❌ Report not found: $REPORT"
-            ls -la reports/daily_briefings/ 2>/dev/null || echo "Directory does not exist"
             exit 1
           fi
 
           echo "📄 Report found: $(wc -c < "$REPORT") bytes"
 
-          git clone https://x-access-token:${PWA_DEPLOY_TOKEN}@github.com/77AutumN/intel-briefing-pwa.git /tmp/pwa
-          cp "$REPORT" /tmp/pwa/data/daily_briefings/
-
-          # Copy pre-generated summaries if available
-          if [ -f "$SUMMARIES" ]; then
-            mkdir -p /tmp/pwa/public/data/summaries
-            cp "$SUMMARIES" /tmp/pwa/public/data/summaries/
-            echo "📝 Summaries found: $(wc -c < "$SUMMARIES") bytes"
-          else
-            echo "⚠️ No summaries file found, PWA will generate on build"
-          fi
-
-          cd /tmp/pwa
           git config user.name "Intel Bot"
-          git config user.email "bot@7brief.com"
-          git add data/daily_briefings/
-          git add -f public/data/summaries/
-          git diff --cached --stat
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/
 
           if git diff --cached --quiet; then
             echo "✅ No changes to commit"
           else
-            git commit -m "data: add daily report ${DATE}"
+            git commit -m "data: daily report ${DATE}"
             git push
-            echo "✅ Report delivered to intel-briefing-pwa"
+            echo "✅ Report committed"
           fi
 

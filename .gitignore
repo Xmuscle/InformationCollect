@@ -2,8 +2,8 @@
 .env
 .secrets/
 
-# 生成的报告 (你的私有情报)
-reports/
+# 生成的报告 (本地测试产物)
+reports/*.log
 
 # 玩家档案 (个人隐私)
 player/
