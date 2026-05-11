@@ -56,12 +56,22 @@ def fetch_ai_papers(limit: int = 10) -> List[ArxivPaper]:
 
 def _query_arxiv(query: str, sort_by: str, limit: int) -> List[ArxivPaper]:
     """Execute a single ArXiv API query and parse results."""
-    url = f"https://export.arxiv.org/api/query?search_query={query}&start=0&max_results={limit}&sortBy={sort_by}&sortOrder=descending"
-    
     try:
-        resp = httpx.get(url, timeout=30)
+        resp = httpx.get(
+            "https://export.arxiv.org/api/query",
+            params={
+                "search_query": query,
+                "start": 0,
+                "max_results": limit,
+                "sortBy": sort_by,
+                "sortOrder": "descending",
+            },
+            timeout=30,
+            headers={"User-Agent": "Intel-Briefing/2.1 (+https://github.com/77AutumN/Intel_Briefing)"},
+        )
+        resp.raise_for_status()
         xml = resp.text
-        
+
         if len(xml) < 500:
             print(f"    DEBUG: Short response ({len(xml)} bytes)")
             return []
@@ -98,13 +108,13 @@ def _query_arxiv(query: str, sort_by: str, limit: int) -> List[ArxivPaper]:
     return papers
 
 def fetch_agent_papers(limit: int = 10) -> List[ArxivPaper]:
-    """Fetch latest AI Agent papers from arXiv with keyword search."""
+    """Fetch latest AI agent papers from arXiv with progressively broader queries."""
     print(f"  → Fetching latest {limit} AI Agent papers from arXiv...")
 
     strategies = [
-        ('ti:"agent"+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG)', "submittedDate"),
-        ('ti:"agent"+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.MA)', "submittedDate"),
-        ('ti:"agent"+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.MA)', "lastUpdatedDate"),
+        ('(ti:"agent"+OR+ti:"agents"+OR+ti:"agentic"+OR+ti:"multi-agent")+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG)', "submittedDate"),
+        ('(ti:"agent"+OR+ti:"agents"+OR+ti:"agentic"+OR+ti:"multi-agent"+OR+abs:"agentic"+OR+abs:"multi-agent")+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.MA)', "submittedDate"),
+        ('(ti:"agent"+OR+ti:"agents"+OR+ti:"agentic"+OR+ti:"multi-agent"+OR+abs:"agent"+OR+abs:"agents")+AND+(cat:cs.AI+OR+cat:cs.CL+OR+cat:cs.LG+OR+cat:cs.MA)', "lastUpdatedDate"),
     ]
 
     for i, (query, sort_by) in enumerate(strategies):

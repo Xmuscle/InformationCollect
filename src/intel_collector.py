@@ -120,7 +120,7 @@ def _safe_print(msg: str):
 
 def _dedup_items(items: list[dict]) -> list[dict]:
     """Deduplicate intel items by normalized title.
-    
+
     Items with empty titles are always kept (no key to dedup on).
     """
     seen = set()
@@ -132,6 +132,33 @@ def _dedup_items(items: list[dict]) -> list[dict]:
                 seen.add(title)
             result.append(item)
     return result
+
+
+def _extract_agent_research_candidates(items: list[dict], limit: int = 5) -> list[dict]:
+    """Select agent-related papers from the general research pool."""
+    keywords = (
+        "agent",
+        "agents",
+        "agentic",
+        "multi-agent",
+        "tool use",
+        "tool-use",
+        "function calling",
+        "computer use",
+        "web navigation",
+        "planner",
+        "planning",
+    )
+    matches = []
+    for item in items:
+        haystack = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+        if any(keyword in haystack for keyword in keywords):
+            matches.append({
+                **item,
+                "source": "ArXiv Agent (fallback)",
+                "category": "ArXiv Agent",
+            })
+    return _dedup_items(matches)[:limit]
 
 
 def validate_grok_report(markdown_content: str) -> str:
@@ -397,19 +424,24 @@ Keep it concise but informative. If no data found, say "暂无X平台讨论数�
         # 2b: Grok X/Twitter intelligence scan
         print(f"\n[*] Batch 2b: Grok X intelligence scan...")
         _t = time.time()
+        social_scans = [
+            ("AI/LLM/Startups", "AI Agents, LLM, Tech Startups"),
+            ("AI Agents", "AI Agents, Agentic AI, Multi-Agent Systems, AI Tool Use"),
+        ]
         try:
-            grok_report = fetch_grok_intel("AI Agents, LLM, Tech Startups")
-            if grok_report and "Error" not in grok_report:
-                validated_report = validate_grok_report(grok_report)
-                intel["social"].append({
-                    "source": "X (via Grok)",
-                    "category": "X/Grok",
-                    "content": validated_report,
-                    "type": "markdown_report"
-                })
-                print("  [INFO] Grok returned X intelligence report (links validated).")
-            else:
-                print(f"  [WARN] Grok returned no data or error.")
+            for label, query in social_scans:
+                grok_report = fetch_grok_intel(query)
+                if grok_report and "Error" not in grok_report:
+                    validated_report = validate_grok_report(grok_report)
+                    intel["social"].append({
+                        "source": f"X (via Grok) - {label}",
+                        "category": "X/Grok",
+                        "content": validated_report,
+                        "type": "markdown_report"
+                    })
+                    print(f"  [INFO] Grok returned {label} intelligence report (links validated).")
+                else:
+                    print(f"  [WARN] Grok returned no data or error for {label}.")
         except Exception as e:
             print(f"  [WARN] Grok API failed: {e}")
         _timings["X/Grok Scan"] = time.time() - _t
@@ -433,7 +465,12 @@ Keep it concise but informative. If no data found, say "暂无X平台讨论数�
         intel["research"] = _dedup_items(intel["research"])
     if intel["agent_research"]:
         intel["agent_research"] = _dedup_items(intel["agent_research"])
-    
+    elif intel["research"]:
+        fallback_agent_research = _extract_agent_research_candidates(intel["research"])
+        if fallback_agent_research:
+            intel["agent_research"] = fallback_agent_research
+            _safe_print(f"  ↪ Agent research fallback: {len(fallback_agent_research)} items from general research")
+
     return intel
 
 

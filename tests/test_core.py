@@ -51,6 +51,18 @@ class TestDedup:
         from src.intel_collector import _dedup_items
         assert _dedup_items([]) == []
 
+    def test_extract_agent_research_candidates_matches_title_and_summary(self):
+        from src.intel_collector import _extract_agent_research_candidates
+        items = [
+            {"title": "Agentic Memory for LLM Systems", "summary": "", "url": "a"},
+            {"title": "Plain RAG Paper", "summary": "Uses multi-agent coordination for retrieval", "url": "b"},
+            {"title": "Unrelated Vision Paper", "summary": "", "url": "c"},
+        ]
+        result = _extract_agent_research_candidates(items)
+        assert len(result) == 2
+        assert result[0]["source"] == "ArXiv Agent (fallback)"
+        assert all(item["category"] == "ArXiv Agent" for item in result)
+
 
 class TestReportGenerator:
     """测试报告生成。"""
@@ -92,6 +104,47 @@ class TestReportGenerator:
         assert "Test Project" in report
         assert "V2EX Topic" in report
         assert "https://example.com" in report
+
+    def test_generate_report_with_multiple_social_reports(self):
+        from src.report_generator import generate_report
+        intel = {
+            "tech_trends": [],
+            "capital_flow": [],
+            "product_gems": [],
+            "community": [],
+            "research": [],
+            "agent_research": [],
+            "social": [
+                {"source": "X (via Grok) - AI/LLM/Startups", "content": "General social report", "type": "markdown_report"},
+                {"source": "X (via Grok) - AI Agents", "content": "Agent social report", "type": "markdown_report"},
+            ],
+            "xhs_directives": [],
+            "insights": [],
+        }
+        report = generate_report(intel, "2026-01-01")
+        assert "X (via Grok) - AI/LLM/Startups" in report
+        assert "X (via Grok) - AI Agents" in report
+        assert "Agent social report" in report
+
+    def test_generate_report_product_gems_include_chinese_intro(self, monkeypatch):
+        import src.report_generator as report_generator
+        monkeypatch.setattr(report_generator, "expand_product_tagline", lambda name, tagline: "中文简介")
+        intel = {
+            "tech_trends": [],
+            "capital_flow": [],
+            "product_gems": [
+                {"title": "Demo Product", "url": "https://example.com", "heat": "10 votes", "tagline": "AI note taker", "topics": []}
+            ],
+            "community": [],
+            "research": [],
+            "agent_research": [],
+            "social": [],
+            "xhs_directives": [],
+            "insights": [],
+        }
+        report = report_generator.generate_report(intel, "2026-01-01")
+        assert "AI note taker" in report
+        assert "中文简介" in report
 
 
 class TestFetchNewsHelpers:

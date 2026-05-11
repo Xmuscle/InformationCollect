@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-An AI-powered intelligence aggregation engine that scrapes 12+ tech/finance data sources, translates/summarizes via Gemini, and generates a structured Chinese daily briefing report. Python 3.11+, managed by uv.
+An intelligence aggregation engine that scrapes tech/finance sources, enriches and summarizes them with LLM calls, and generates a structured Chinese daily briefing report. Python 3.11+ project managed with `uv`.
 
 ## Commands
 
@@ -12,61 +12,95 @@ An AI-powered intelligence aggregation engine that scrapes 12+ tech/finance data
 # Install dependencies
 uv sync
 
-# Run full daily report
+# Run the full daily report
 uv run python cli.py
 
-# Test mode (1 item per source, fast)
+# Fast local smoke run (1 item per source)
 uv run python cli.py --test
 
-# Run tests
+# Override source limit or output file
+uv run python cli.py --limit 3
+uv run python cli.py --output reports/daily_briefings/custom.md
+
+# Run all tests
 uv run pytest tests/ -v
 
 # Run a single test file
 uv run pytest tests/test_core.py -v
 
-# Add a dependency
-uv add <package>
+# Run a single test
+uv run pytest tests/test_anti_hallucination.py -k grok_fallback_not_clickable -v
 
-# Add a dev dependency
+# Add dependencies
+uv add <package>
 uv add --group dev <package>
 ```
 
 ## Architecture
 
-### Two-tier data collection (historical, consolidation planned)
+### End-to-end flow
 
-- **Tier 1 (Aggregator)**: `src/external/fetch_news.py` — HN, GitHub, 36Kr, V2EX, WallStreetCN via a single module
-- **Tier 2 (Sensors)**: `src/sensors/` — independent per-source modules (Product Hunt, ArXiv, HF Papers, Grok/X, HN Blogs, TechCrunch, MIT-TR)
+`cli.py` is the only entrypoint used by local runs and the scheduled GitHub Actions job. It parses `--limit`, `--test`, and `--output`, calls `src.intel_collector.fetch_all_sources()`, passes the result into `src.report_generator.generate_report()`, then writes markdown into `reports/daily_briefings/`.
 
-### Core pipeline (cli.py → collector → generator)
+### Collection is split into two layers
 
-1. `cli.py` — CLI entry point, parses args, orchestrates fetch + report
-2. `src/intel_collector.py` — concurrent fetch via ThreadPoolExecutor with batch ordering (Batch 1: independent sources in parallel; Batch 2: Grok calls that depend on Batch 1 results)
-3. `src/report_generator.py` — renders collected intel into a markdown report with anti-hallucination logic
+- `src/external/fetch_news.py` is the older aggregator-style layer for sources that are still fetched as plain dictionaries from one shared module.
+- `src/sensors/` contains source-specific fetchers for newer or more specialized integrations.
 
-### Key modules
+That split is intentional but transitional: the codebase still runs both paths in the same collection pass.
 
-- `src/config.py` — `IntelConfig` singleton. Priority: env vars > `.env` > defaults
-- `src/utils/gemini_translator.py` — Gemini-based Chinese translation and summarization
-- `src/utils/jina_reader.py` — full-text web extraction with DDG fallback
-- `src/utils/verifier.py` — link validity verification
+### Collector orchestration model
 
-### Design patterns
+`src/intel_collector.py` is the runtime hub.
 
-- **Graceful degradation**: missing API keys or empty responses skip the source rather than crash
-- **Anti-hallucination**: Grok fallback URLs are marked as unverified and rendered without clickable links
-- **Concurrent with ordering**: ThreadPoolExecutor for parallelism, but respects dependency ordering between batches
+- Batch 1 runs independent sources concurrently with `ThreadPoolExecutor`.
+- Batch 2 runs Grok-dependent work after Product Hunt results exist.
+- The collector normalizes each source into category buckets like `tech_trends`, `capital_flow`, `product_gems`, `research`, `agent_research`, `social`, `community`, and `insights`.
+- Research lists are deduplicated after collection by normalized title.
+
+When changing fetch behavior, preserve the dependency ordering between Batch 1 and Grok follow-up work.
+
+### Report generation responsibilities
+
+`src/report_generator.py` is not just formatting. It also contains output-time enrichment rules:
+
+- tech/research/insight sections call LLM summarization helpers
+- insight articles may fetch full text through Jina before summarization
+- Product Hunt items tagged with `grok-fallback` must stay non-clickable and instead render with a verification warning plus search link
+- social output from Grok is treated as markdown and optionally post-validated
+
+If you change output structure, keep the anti-hallucination behavior aligned with `tests/test_anti_hallucination.py`.
+
+### Configuration model
+
+`src/config.py` is the single source of truth for runtime configuration. It loads `.env` from the project root once, builds an immutable `IntelConfig`, and then exposes both `cfg` and backward-compatible module constants.
+
+Resolution order is environment variables first, then defaults. Most modules import config values directly from `src.config`, so config changes propagate broadly.
+
+### LLM and content-enrichment stack
+
+Despite the filename, `src/utils/gemini_translator.py` currently implements the DeepSeek-backed translation and summarization helpers used during report generation.
+
+Supporting utilities:
+
+- `src/utils/jina_reader.py` fetches article body text through Jina and falls back to DuckDuckGo snippets for blocked/junk pages
+- `src/utils/verifier.py` validates links so Grok-produced URLs can be flagged when unreachable
+
+### Scheduled automation
+
+`.github/workflows/daily-report.yml` is the production path. It installs Python via `uv`, runs `uv run python cli.py`, and commits the generated report back into this repo on a daily cron. The workflow has a 15-minute timeout, which matches the runtime budget reporting printed by the collector.
 
 ## Testing
 
-Tests are fast (<1s) and require no API keys. Three categories:
-- `test_import_smoke.py` — all 16 modules import cleanly
-- `test_anti_hallucination.py` — Grok fallback URLs don't become clickable links
-- `test_graceful_degradation.py` — missing keys/empty data don't crash
-- `test_core.py` — core functionality
+Tests are lightweight and do not require live API keys.
+
+- `tests/test_import_smoke.py` verifies the main modules import cleanly via `src.*`
+- `tests/test_core.py` covers config, deduplication, report rendering, helper utilities, and Grok-report validation behavior
+- `tests/test_graceful_degradation.py` ensures empty or partial intel payloads still render reports
+- `tests/test_anti_hallucination.py` locks the Product Hunt Grok-fallback rule: guessed URLs must not render as clickable markdown links
 
 ## Environment
 
-API keys go in `.env` (see `.env.example`). Minimum requirement: `GITHUB_TOKEN`. Optional: `XAI_API_KEY`, `PRODUCTHUNT_TOKEN`, `GEMINI_API_KEY`.
+Secrets live in `.env` or CI environment variables. The code currently reads `GITHUB_TOKEN`, `XAI_API_KEY`, `PRODUCTHUNT_TOKEN`, and `DEEPSEEK_API_KEY` from `src/config.py`.
 
-Proxy config via standard `HTTP_PROXY`/`HTTPS_PROXY` env vars.
+Standard `HTTP_PROXY` and `HTTPS_PROXY` environment variables are supported for networked fetches.

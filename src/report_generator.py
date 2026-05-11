@@ -15,7 +15,7 @@ from src.config import LLM_RATE_LIMIT_DELAY
 
 # --- DeepSeek Translator ---
 try:
-    from src.utils.gemini_translator import translate_to_chinese, summarize_blog_article, generate_brief, generate_news_brief
+    from src.utils.gemini_translator import translate_to_chinese, summarize_blog_article, generate_brief, generate_news_brief, expand_product_tagline
     LLM_AVAILABLE = True
 except ImportError:
     LLM_AVAILABLE = False
@@ -40,6 +40,9 @@ if not LLM_AVAILABLE:
         return ""
 
     def generate_news_brief(title, content="", category="tech"):
+        return ""
+
+    def expand_product_tagline(name, tagline):
         return ""
 
 
@@ -182,6 +185,11 @@ def generate_report(intel: dict, date_str: str) -> str:
             grok_review = item.get("grok_review")
             topics = item.get("topics", [])
 
+            tagline_cn = ""
+            if tagline and LLM_AVAILABLE:
+                tagline_cn = expand_product_tagline(title, tagline)
+                time.sleep(LLM_RATE_LIMIT_DELAY)
+
             # Anti-hallucination: Grok fallback URLs are guessed slugs, not real links
             is_grok_fallback = "grok-fallback" in topics
             if is_grok_fallback:
@@ -189,10 +197,14 @@ def generate_report(intel: dict, date_str: str) -> str:
                 search_url = f"https://www.google.com/search?q=site:producthunt.com+{quote(title)}"
                 lines.append(f"### {i}. {title}")
                 lines.append(f"> {tagline}")
+                if tagline_cn:
+                    lines.append(f"> {tagline_cn}")
                 lines.append(f"⚠️ *链接未验证 (AI 推断)* | [🔍 搜索验证]({search_url})")
             else:
                 lines.append(f"### {i}. [{title}]({url})")
                 lines.append(f"> {tagline}")
+                if tagline_cn:
+                    lines.append(f"> {tagline_cn}")
                 lines.append(f"🔥 {heat}")
             lines.append("")
 
